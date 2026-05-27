@@ -51,6 +51,7 @@ export default function PromptInput({ onSend, isGenerating, onStop, isUploading 
                     from { transform: rotate(0deg); }
                     to { transform: rotate(360deg); }
                 }
+                    textarea::placeholder { color: #555; }
                 `}
             </style>
 
@@ -184,7 +185,7 @@ export default function PromptInput({ onSend, isGenerating, onStop, isUploading 
                     </div>
                 )}
             </div>
-            <p style={{ textAlign: "center", fontSize: 11, color: "#333", marginTop: 8 }}>
+            <p style={{ textAlign: "center", fontSize: 11, color: "#444", marginTop: 8 }}>
                 Press Enter to send · Shift+Enter for new line
             </p>
         </div>
