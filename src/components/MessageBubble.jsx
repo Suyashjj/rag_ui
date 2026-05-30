@@ -1,4 +1,5 @@
-import { FileText, Sparkles } from "lucide-react"
+import { FileText, Sparkles, ChevronDown } from "lucide-react"
+import { useState } from "react"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
@@ -48,10 +49,28 @@ const markdownStyles = `
         from { opacity: 0; transform: translateY(6px); }
         to   { opacity: 1; transform: translateY(0); }
     }
+
+    @keyframes slideDown {
+        from { opacity: 0; max-height: 0; transform: translateY(-4px); }
+        to   { opacity: 1; max-height: 500px; transform: translateY(0); }
+    }
+    .sources-dropdown { animation: slideDown 0.25s ease forwards; overflow: hidden; }
+
+    .sources-toggle {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: #161616; border: 1px solid #262626;
+        border-radius: 8px; padding: 6px 10px;
+        font-size: 12px; color: #888; cursor: pointer;
+        transition: all 0.18s ease; user-select: none;
+    }
+    .sources-toggle:hover { background: #1c1c1c; color: #bbb; border-color: #333; }
+    .chevron { transition: transform 0.25s ease; }
+    .chevron.open { transform: rotate(180deg); }
 `
 
-export default function MessageBubble({ message }) {
+export default function MessageBubble({ message, isStreaming }) {
     const isUser = message.role === "user"
+    const [showSources, setShowSources] = useState(false)
 
     return (
         <div style={{
@@ -88,17 +107,20 @@ export default function MessageBubble({ message }) {
                     </div>
                 ) : (
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 14, width: "100%" }}>
-                        <div style={{
-                            width: 28, height: 28, borderRadius: "50%",
-                            background: "#1e1e1e",
-                            border: "1px solid #2e2e2e",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            flexShrink: 0, marginTop: 2
-                        }}>
-                            <Sparkles className="sparkle-icon" size={13} color="#777" />
-                        </div>
+                        {/* ✅ Show spinning Sparkles avatar ONLY while streaming */}
+                        {isStreaming && (
+                            <div style={{
+                                width: 28, height: 28, borderRadius: "50%",
+                                background: "#1e1e1e",
+                                border: "1px solid #2e2e2e",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                flexShrink: 0, marginTop: 2
+                            }}>
+                                <Sparkles className="sparkle-icon" size={13} color="#777" />
+                            </div>
+                        )}
 
-                        <div className="md-body" style={{ flex: 1, paddingTop: 3 }}>
+                        <div className="md-body" style={{ flex: 1, paddingTop: 3, minWidth: 0 }}>
                             {(() => {
                                 const raw = message.text.replace(/\n?METADATA:\[.*?\]/gs, "").trimEnd()
                                 const citationRegex = /\[([^\]]*\.pdf[^\]]*)\]/g
@@ -112,27 +134,52 @@ export default function MessageBubble({ message }) {
                                     .replace(/\s+([.,])/g, "$1")
                                     .trim()
 
+                                const uniqueCitations = [...new Set(citations)]
+
                                 return (
                                     <>
                                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                             {cleanText}
                                         </ReactMarkdown>
-                                        {citations.length > 0 && (
-                                            <div style={{
-                                                marginTop: 10, paddingTop: 8,
-                                                borderTop: "1px solid #222",
-                                                display: "flex", flexDirection: "column", gap: 4
-                                            }}>
-                                                {[...new Set(citations)].map((cite, i) => (
-                                                    <span key={i} style={{
-                                                        display: "flex", alignItems: "center", gap: 6,
-                                                        fontSize: 12, color: "#666",
-                                                        paddingLeft: 8, borderLeft: "2px solid #2e2e2e",
-                                                    }}>
-                                                        <FileText size={11} color="#555" />
-                                                        {cite}
-                                                    </span>
-                                                ))}
+
+                                        {uniqueCitations.length > 0 && (
+                                            <div style={{ marginTop: 12 }}>
+                                                <button
+                                                    className="sources-toggle"
+                                                    onClick={() => setShowSources(s => !s)}
+                                                >
+                                                    <FileText size={12} color="#888" />
+                                                    View Sources ({uniqueCitations.length})
+                                                    <ChevronDown
+                                                        size={13}
+                                                        className={`chevron ${showSources ? "open" : ""}`}
+                                                    />
+                                                </button>
+
+                                                {showSources && (
+                                                    <div
+                                                        className="sources-dropdown"
+                                                        style={{
+                                                            marginTop: 8,
+                                                            paddingTop: 8,
+                                                            borderTop: "1px solid #222",
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            gap: 4
+                                                        }}
+                                                    >
+                                                        {uniqueCitations.map((cite, i) => (
+                                                            <span key={i} style={{
+                                                                display: "flex", alignItems: "center", gap: 6,
+                                                                fontSize: 12, color: "#666",
+                                                                paddingLeft: 8, borderLeft: "2px solid #2e2e2e",
+                                                            }}>
+                                                                <FileText size={11} color="#555" />
+                                                                {cite}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         )}
                                     </>

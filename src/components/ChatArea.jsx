@@ -10,12 +10,36 @@ export default function ChatArea({ sidebarOpen, onToggleSidebar, messages, onSen
         bottomRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [messages, isUploading])
 
+    // Filter once so indices match between rendering and "isLast" detection
+    const visibleMessages = messages.filter(msg => !(msg.role === "assistant" && !msg.text))
+
     return (
-        <main style={{ background: "#141414", display: "flex", flexDirection: "column", height: "100%", flex: 1, minWidth: 0 }}>
-            <header style={{ borderBottom: "1px solid #1e1e1e", padding: "12px 16px", display: "flex", alignItems: "center", flexShrink: 0 }}>
+        <main style={{
+            background: "#141414",
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            flex: 1,
+            minWidth: 0
+        }}>
+            <header style={{
+                borderBottom: "1px solid #1e1e1e",
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                flexShrink: 0
+            }}>
                 {!sidebarOpen && (
                     <button onClick={onToggleSidebar}
-                        style={{ marginRight: 12, padding: "6px", borderRadius: 6, background: "transparent", border: "none", cursor: "pointer", color: "#444" }}
+                        style={{
+                            marginRight: 12,
+                            padding: "6px",
+                            borderRadius: 6,
+                            background: "transparent",
+                            border: "none",
+                            cursor: "pointer",
+                            color: "#444"
+                        }}
                         onMouseEnter={e => e.currentTarget.style.color = "#aaa"}
                         onMouseLeave={e => e.currentTarget.style.color = "#444"}
                     >
@@ -27,15 +51,35 @@ export default function ChatArea({ sidebarOpen, onToggleSidebar, messages, onSen
                 </span>
             </header>
 
-            <div style={{ flex: 1, overflowY: "auto" }}>
+            {/* ✅ Scrollable messages area */}
+            <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
                 {messages.length === 0 && !isUploading ? (
                     <EmptyState />
                 ) : (
-                    <div style={{ maxWidth: 860, margin: "0 auto", padding: "24px 16px", display: "flex", flexDirection: "column", gap: "24px" }}>
-                        {messages
-                            .filter(msg => !(msg.role === "assistant" && !msg.text))
-                            .map(msg => <MessageBubble key={msg.id} message={msg} />)
-                        }
+                    <div style={{
+                        width: "100%",
+                        maxWidth: 860,
+                        margin: "0 auto",
+                        padding: "24px 12px",
+                        boxSizing: "border-box",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "24px"
+                    }}>
+                        {visibleMessages.map((msg, i) => {
+                            const isLast = i === visibleMessages.length - 1
+                            const isStreaming =
+                                isGenerating &&
+                                isLast &&
+                                msg.role === "assistant"
+                            return (
+                                <MessageBubble
+                                    key={msg.id}
+                                    message={msg}
+                                    isStreaming={isStreaming}
+                                />
+                            )
+                        })}
                         {isUploading && (
                             <FileUploadLoader fileName={messages[messages.length - 1]?.files?.[0]?.name} />
                         )}
@@ -47,8 +91,20 @@ export default function ChatArea({ sidebarOpen, onToggleSidebar, messages, onSen
                 )}
             </div>
 
-            <div style={{ flexShrink: 0, maxWidth: 860, margin: "0 auto", width: "100%" }}>
-                <PromptInput onSend={onSend} isGenerating={isGenerating} onStop={onStop} isUploading={isUploading} />
+            {/* ✅ PromptInput wrapper */}
+            <div style={{
+                flexShrink: 0,
+                width: "100%",
+                maxWidth: 860,
+                margin: "0 auto",
+                boxSizing: "border-box"
+            }}>
+                <PromptInput
+                    onSend={onSend}
+                    isGenerating={isGenerating}
+                    onStop={onStop}
+                    isUploading={isUploading}
+                />
             </div>
         </main>
     )
@@ -102,7 +158,10 @@ function FileUploadLoader({ fileName }) {
                 background: "#181818", border: "1px solid #2a2a2a",
                 borderRadius: "4px 18px 18px 18px",
                 padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
-                minWidth: 240, maxWidth: 320, position: "relative", overflow: "hidden"
+                flex: 1,
+                maxWidth: 320,
+                position: "relative",
+                overflow: "hidden"
             }}>
                 <div style={{
                     position: "absolute", inset: 0,
@@ -152,7 +211,12 @@ function FileUploadLoader({ fileName }) {
 
 function EmptyState() {
     return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 12, textAlign: "center", padding: "0 16px" }}>
+        <div style={{
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            height: "100%", gap: 12, textAlign: "center",
+            padding: "0 16px"
+        }}>
             <div style={{
                 width: 48, height: 48, borderRadius: 14,
                 background: "#1a1a1a", border: "1px solid #252525",
@@ -161,7 +225,9 @@ function EmptyState() {
                 <Sparkles size={22} color="#555" />
             </div>
             <h2 style={{ fontSize: 17, fontWeight: 600, color: "#d0d0d0" }}>How can I help you?</h2>
-            <p style={{ fontSize: 13, color: "#606060", maxWidth: 280 }}>Ask anything, upload files, or start a new conversation.</p>
+            <p style={{ fontSize: 13, color: "#606060", maxWidth: 280 }}>
+                Ask anything, upload files, or start a new conversation.
+            </p>
         </div>
     )
 }
